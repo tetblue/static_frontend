@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我們的超讚產品！</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        .hero-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            /* 40px */
+            font-weight: 700;
+            margin-bottom: 2rem;
+            /* 32px */
+            text-align: center;
+            color: #333;
+        }
+
+        .interactive-text-container {
+            perspective: 1000px;
+        }
+
+        .interactive-text-trigger {
+            background-color: #4F46E5;
+            /* Indigo 600 */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .interactive-text-trigger:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .product-description-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-out, opacity 0.5s ease-out, transform 0.5s ease-out;
+            opacity: 0;
+            transform: translateY(-20px);
+            background-color: #f9fafb;
+            /* Gray 50 */
+            padding: 0 1.5rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-description-content.expanded {
+            max-height: 1000px;
+            /* 넉넉한 값 */
+            opacity: 1;
+            transform: translateY(0);
+            padding: 1.5rem;
+        }
+
+        #modal-3d {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        #modal-3d.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #canvas-container {
+            width: 80vw;
+            height: 80vh;
+            max-width: 800px;
+            max-height: 600px;
+            background-color: #2d3748;
+            /* Gray 800 */
+            border-radius: 0.5rem;
+            position: relative;
+        }
+
+        #close-modal-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: white;
+            color: #333;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .contact-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .contact-icon:hover {
+            transform: scale(1.2);
+        }
+
+        .pulsating-glow {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+            }
+
+            /* Indigo 500 */
+            70% {
+                box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-gray-800">
+
+    <header class="hero-bg text-white py-20 px-6 text-center">
+        <h1 class="text-5xl font-bold mb-4 animate-bounce">探索我們的超讚產品！</h1>
+        <p class="text-xl mb-8">重新定義您的體驗，帶來前所未有的創新。</p>
+        <a href="#product-image"
+            class="bg-white text-indigo-600 font-semibold py-3 px-8 rounded-lg shadow-lg hover:bg-gray-200 transition duration-300 pulsating-glow">搶先預覽</a>
+    </header>
+
+    <section id="product-image" class="py-16 px-6 container mx-auto text-center">
+        <h2 class="section-title">產品寫真</h2>
+        <p class="text-lg text-gray-600 mb-8">點擊下方圖片，進入互動式3D模型預覽！</p>
+        <div class="flex justify-center">
+            <img id="main-product-image" src="https://placehold.co/600x400/764ba2/white?text=點我查看3D模型" alt="產品主圖"
+                class="rounded-lg shadow-2xl cursor-pointer hover:shadow-indigo-400/60 transition-shadow duration-300 w-full max-w-xl object-cover"
+                onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/333333?text=圖片載入失敗';">
+        </div>
+    </section>
+
+    <div id="modal-3d">
+        <div id="canvas-container">
+            <button id="close-modal-btn" aria-label="關閉3D預覽">&times;</button>
+        </div>
+    </div>
+
+    <section id="product-description" class="py-16 px-6 bg-white">
+        <div class="container mx-auto text-center">
+            <h2 class="section-title">想更了解它嗎？</h2>
+            <div class="interactive-text-container mt-8">
+                <div id="text-trigger" class="interactive-text-trigger">
+                    <span class="text-xl font-semibold">✨ 點我揭曉產品神秘面紗 ✨</span>
+                </div>
+                <div id="description-content" class="product-description-content text-left">
+                    <h3 class="text-2xl font-semibold text-indigo-700 mb-4 mt-2">產品核心特色</h3>
+                    <p class="text-gray-700 mb-3 leading-relaxed">
+                        這不僅僅是一個產品，它是一種體驗。採用最先進的技術和最優質的材料精心打造，旨在提升您的日常生活品質。它的設計兼顧美學與功能性，確保在任何環境下都能完美呈現。</p>
+                    <ul class="list-disc list-inside text-gray-700 mb-3 leading-relaxed space-y-1">
+                        <li>革命性設計：融合現代美學與人體工學。</li>
+                        <li>頂級效能：搭載最新處理器，速度無與倫比。</li>
+                        <li>持久耐用：採用強化材料，經久耐用。</li>
+                        <li>智能互聯：輕鬆連接您的所有設備。</li>
+                        <li>環保理念：使用可持續材料，愛護地球。</li>
+                    </ul>
+                    <p class="text-gray-700 leading-relaxed">我們相信，偉大的產品能夠改變生活。這就是為什麼我們投入無數時間進行研發，只為給您帶來最好的。準備好迎接改變了嗎？
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="product-video" class="py-16 px-6">
+        <div class="container mx-auto text-center">
+            <h2 class="section-title">動態展示</h2>
+            <p class="text-lg text-gray-600 mb-8">透過影片，親身體驗產品的魅力！</p>
+            <div class="aspect-w-16 aspect-h-9 max-w-3xl mx-auto bg-gray-300 rounded-lg shadow-xl overflow-hidden">
+                <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="產品影片" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen class="w-full h-full"></iframe>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="py-16 px-6 bg-indigo-700 text-white">
+        <div class="container mx-auto text-center">
+            <h2 class="text-4xl font-bold mb-8">心動了嗎？立即聯繫我們！</h2>
+            <p class="text-lg mb-10">我們隨時準備好為您服務，解答您的任何疑問。</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                <a href="mailto:sales@example.com"
+                    class="bg-white text-indigo-600 p-6 rounded-lg shadow-lg hover:bg-indigo-100 transition duration-300 flex flex-col items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="contact-icon mb-3 text-indigo-500">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                    <h3 class="text-xl font-semibold mb-1">電子郵件</h3>
+                    <p class="text-sm">sales@example.com</p>
+                </a>
+                <a href="tel:+886912345678"
+                    class="bg-white text-indigo-600 p-6 rounded-lg shadow-lg hover:bg-indigo-100 transition duration-300 flex flex-col items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="contact-icon mb-3 text-indigo-500">
+                        <path
+                            d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                        </path>
+                    </svg>
+                    <h3 class="text-xl font-semibold mb-1">客服專線</h3>
+                    <p class="text-sm">+886-912-345-678</p>
+                </a>
+                <a href="https://line.me/ti/p/~yourlineid" target="_blank" rel="noopener noreferrer"
+                    class="bg-white text-indigo-600 p-6 rounded-lg shadow-lg hover:bg-indigo-100 transition duration-300 flex flex-col items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+                        fill="currentColor" class="contact-icon mb-3 text-green-500">
+                        <path
+                            d="M12.031 6.188c-3.12 0-5.656 2.536-5.656 5.656s2.536 5.656 5.656 5.656c.225 0 .444-.014.66-.04.004.002.008.003.012.005.075.027.15.058.226.09l.132.048c.004.002.008.003.012.004l1.445.516.002.001c.24.084.48.12.72.12.48 0 .84-.24.84-.6v-1.32c.744-.614 1.2-1.514 1.2-2.523 0-1.753-1.427-3.18-3.18-3.18s-3.18 1.427-3.18 3.18h-1.02c0-2.305 1.875-4.18 4.179-4.18s4.2 1.875 4.2 4.18c0 1.2-.528 2.268-1.333 2.998l-.027.025v1.717c0 .468.118.9.32 1.277l-1.69.604-.004-.001-.101.036c-.08.028-.16.053-.24.075-.004.001-.008.002-.012.003-.26.03-.525.045-.795.045-3.684 0-6.677-2.992-6.677-6.676s2.993-6.677 6.676-6.677c3.684 0 6.677 2.993 6.677 6.676v.005c.014.217.021.436.021.655 0 3.12-2.536 5.656-5.656 5.656zm-3.075 2.205c.84 0 1.44-.6 1.44-1.44s-.6-1.44-1.44-1.44-1.44.6-1.44 1.44.6 1.44 1.44 1.44zm6.15 0c.84 0 1.44-.6 1.44-1.44s-.6-1.44-1.44-1.44-1.44.6-1.44 1.44.6 1.44 1.44 1.44z" />
+                    </svg>
+                    <h3 class="text-xl font-semibold mb-1">Line洽詢</h3>
+                    <p class="text-sm">ID: yourlineid</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-8 text-center bg-gray-800 text-gray-400">
+        <p>&copy; <span id="current-year"></span> 您的公司名稱. 版權所有.</p>
+    </footer>
+
+    <script>
+        // Interactive Text Description
+        const textTrigger = document.getElementById('text-trigger');
+        const descriptionContent = document.getElementById('description-content');
+
+        textTrigger.addEventListener('click', () => {
+            descriptionContent.classList.toggle('expanded');
+            if (descriptionContent.classList.contains('expanded')) {
+                textTrigger.innerHTML = '<span class="text-xl font-semibold">🎉 太棒了！繼續探索更多細節 🎉</span>';
+            } else {
+                textTrigger.innerHTML = '<span class="text-xl font-semibold">✨ 點我揭曉產品神秘面紗 ✨</span>';
+            }
+        });
+
+        // 3D Model Modal
+        const mainProductImage = document.getElementById('main-product-image');
+        const modal3D = document.getElementById('modal-3d');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const canvasContainer = document.getElementById('canvas-container');
+        let scene, camera, renderer, cube, controls; // Make controls global for mouse events
+
+        function init3D() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x2d3748); // Match canvas container bg
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            canvasContainer.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7.5);
+            scene.add(directionalLight);
+
+            // Placeholder 3D Object (Cube)
+            // 您可以在這裡替換成您的 .gltf, .obj 模型載入器
+            const geometry = new THREE.BoxGeometry(2, 2, 2); // 尺寸可調整
+            // 使用 MeshStandardMaterial 以獲得更好的光照效果
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x764ba2, // 紫色系，呼應主題
+                metalness: 0.5,   // 金屬感
+                roughness: 0.5    // 粗糙度
+            });
+            cube = new THREE.Mesh(geometry, material);
+            scene.add(cube);
+
+            // Animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+                // 如果沒有 controls 或 cube 未定義，則不執行旋轉
+                if (cube && !isDragging) { // Only auto-rotate if not dragging
+                    cube.rotation.x += 0.005;
+                    cube.rotation.y += 0.005;
+                }
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Handle window resize for the 3D canvas
+            window.addEventListener('resize', onModalResize);
+            setupControls();
+        }
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        function setupControls() {
+            canvasContainer.addEventListener('mousedown', (event) => {
+                isDragging = true;
+                previousMousePosition = { x: event.clientX, y: event.clientY };
+            });
+
+            canvasContainer.addEventListener('mousemove', (event) => {
+                if (!isDragging || !cube) return;
+                const deltaMove = {
+                    x: event.clientX - previousMousePosition.x,
+                    y: event.clientY - previousMousePosition.y
+                };
+
+                const rotationSpeed = 0.005;
+                cube.rotation.y += deltaMove.x * rotationSpeed;
+                cube.rotation.x += deltaMove.y * rotationSpeed;
+
+                previousMousePosition = { x: event.clientX, y: event.clientY };
+            });
+
+            document.addEventListener('mouseup', () => { // Listen on document to catch mouseup outside canvas
+                isDragging = false;
+            });
+
+            // Touch controls
+            canvasContainer.addEventListener('touchstart', (event) => {
+                if (event.touches.length === 1) {
+                    isDragging = true;
+                    previousMousePosition = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+                }
+            }, { passive: false }); // passive: false to allow preventDefault if needed
+
+            canvasContainer.addEventListener('touchmove', (event) => {
+                if (!isDragging || !cube || event.touches.length !== 1) return;
+                event.preventDefault(); // Prevent page scrolling while dragging on canvas
+
+                const deltaMove = {
+                    x: event.touches[0].clientX - previousMousePosition.x,
+                    y: event.touches[0].clientY - previousMousePosition.y
+                };
+
+                const rotationSpeed = 0.007; // Slightly more sensitive for touch
+                cube.rotation.y += deltaMove.x * rotationSpeed;
+                cube.rotation.x += deltaMove.y * rotationSpeed;
+
+                previousMousePosition = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+            }, { passive: false });
+
+            canvasContainer.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+        }
+
+
+        function onModalResize() {
+            if (camera && renderer && canvasContainer.clientWidth > 0 && canvasContainer.clientHeight > 0) {
+                camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            }
+        }
+
+        let threeJsInitialized = false;
+
+        mainProductImage.addEventListener('click', () => {
+            modal3D.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            if (!threeJsInitialized) {
+                init3D();
+                threeJsInitialized = true;
+            }
+            onModalResize(); // Ensure canvas is correctly sized on open
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            modal3D.classList.remove('active');
+            document.body.style.overflow = ''; // Restore scrolling
+        });
+
+        // Close modal if clicked outside the canvas container
+        modal3D.addEventListener('click', (event) => {
+            if (event.target === modal3D) {
+                modal3D.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // Set current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+
+    </script>
+</body>
+
+</html>
